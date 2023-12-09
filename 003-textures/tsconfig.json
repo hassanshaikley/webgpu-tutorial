@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["@webgpu/types", "gl-matrix"],
+    "types": ["@webgpu/types", "gl-matrix", "vite/client", "vitest/globals"],
     "skipLibCheck": true,
 
     /* Bundler mode */
