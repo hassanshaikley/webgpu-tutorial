@@ -20,8 +20,8 @@ const drawSprite = (
   rect: Rect,
   projectionViewMatrixBuffer: GPUBuffer,
   indexBuffer: GPUBuffer,
-  passEncoder,
-  camera
+  passEncoder: GPURenderPassEncoder,
+  camera: Camera
 ) => {
   const spritePipeline = SpritePipeline.create(
     device,
@@ -98,7 +98,7 @@ class SpritePipeline {
 
   public static create(
     device: GPUDevice,
-    texture: Texture,
+    texture: any,
     projectionViewMatrixBuffer: GPUBuffer
   ): SpritePipeline {
     const pipeline = new SpritePipeline();
@@ -112,7 +112,7 @@ class SpritePipeline {
 
   public initialize(
     device: GPUDevice,
-    texture: Texture,
+    texture: any,
     projectionViewMatrixBuffer: GPUBuffer
   ): void {
     const shaderModule = device.createShaderModule({
@@ -297,126 +297,6 @@ const main = async () => {
     new Float32Array(16)
   );
 
-  const shaderModule = device.createShaderModule({
-    code: shaderSource,
-  });
-
-  const positionBufferLayout: GPUVertexBufferLayout = {
-    arrayStride: 7 * Float32Array.BYTES_PER_ELEMENT, // 2 floats * 4 bytes per float
-    attributes: [
-      {
-        shaderLocation: 0,
-        offset: 0,
-        format: "float32x2", // 2 floats
-      },
-      {
-        shaderLocation: 1,
-        offset: 2 * Float32Array.BYTES_PER_ELEMENT,
-        format: "float32x2", // 2 floats
-      },
-      {
-        shaderLocation: 2,
-        offset: 4 * Float32Array.BYTES_PER_ELEMENT,
-        format: "float32x3", // 3 floats
-      },
-    ],
-    stepMode: "vertex",
-  };
-
-  const vertexState: GPUVertexState = {
-    module: shaderModule,
-    entryPoint: "vertexMain", // name of the entry point function for vertex shader, must be same as in shader
-    buffers: [positionBufferLayout],
-  };
-
-  const fragmentState: GPUFragmentState = {
-    module: shaderModule,
-    entryPoint: "fragmentMain", // name of the entry point function for fragment/pixel shader, must be same as in shader
-    targets: [
-      {
-        format: navigator.gpu.getPreferredCanvasFormat(),
-        blend: {
-          color: {
-            srcFactor: "one",
-            dstFactor: "one-minus-src-alpha",
-            operation: "add",
-          },
-          alpha: {
-            srcFactor: "one",
-            dstFactor: "one-minus-src-alpha",
-            operation: "add",
-          },
-        },
-      },
-    ],
-  };
-
-  const projectionViewBindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {
-          type: "uniform",
-        },
-      },
-    ],
-  });
-
-  const textureBindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {},
-      },
-      {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {},
-      },
-    ],
-  });
-
-  const pipelineLayout = device.createPipelineLayout({
-    bindGroupLayouts: [projectionViewBindGroupLayout, textureBindGroupLayout],
-  });
-
-  const textureBindGroup = device.createBindGroup({
-    layout: textureBindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: playerTexture.sampler,
-      },
-      {
-        binding: 1,
-        resource: playerTexture.texture.createView(),
-      },
-    ],
-  });
-
-  const projectionViewBindGroup = device.createBindGroup({
-    layout: projectionViewBindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: projectionViewMatrixBuffer,
-        },
-      },
-    ],
-  });
-
-  const pipeline = device.createRenderPipeline({
-    vertex: vertexState,
-    fragment: fragmentState,
-    primitive: {
-      topology: "triangle-list", // type of primitive to render
-    },
-    layout: pipelineLayout,
-  });
-
   const draw = () => {
     camera.update();
 
@@ -468,13 +348,6 @@ const main = async () => {
       );
     }
 
-    // // DRAW HERE
-    // passEncoder.setPipeline(SpritePipeline.pipeline);
-    // passEncoder.setIndexBuffer(indexBuffer, "uint16");
-    // passEncoder.setVertexBuffer(0, verticesBuffer);
-    // passEncoder.setBindGroup(0, projectionViewBindGroup);
-    // passEncoder.setBindGroup(1, textureBindGroup);
-    // passEncoder.drawIndexed(6); // draw 3 vertices
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
 
