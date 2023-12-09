@@ -1,5 +1,6 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
 import texture from "./texture.png";
+import { createTextureFromURL, initializeGpu } from "./utils";
 
 const createVertexBuffer = (
   device: GPUDevice,
@@ -31,28 +32,7 @@ const createIndexBuffer = (device: GPUDevice, data: Uint16Array): GPUBuffer => {
 };
 
 const main = async () => {
-  const canvas = document.getElementById("webgpu-canvas") as HTMLCanvasElement;
-  const context = canvas.getContext("webgpu") as GPUCanvasContext;
-
-  if (!context) {
-    console.error("WebGPU not supported");
-    alert("WebGPU not supported");
-    return;
-  }
-
-  const adapter = await navigator.gpu.requestAdapter();
-
-  if (!adapter) {
-    throw new Error("No adapter found");
-  }
-
-  const device = await adapter.requestDevice();
-
-  context.configure({
-    device: device,
-    format: navigator.gpu.getPreferredCanvasFormat(),
-  });
-
+  const { device, context } = await initializeGpu();
   const testTexture = await createTextureFromURL(device, texture);
 
   const verticesBuffer = createVertexBuffer(
@@ -197,56 +177,3 @@ const main = async () => {
 };
 
 main();
-
-const createTexture = async (
-  device: GPUDevice,
-  image: HTMLImageElement
-): Promise<any> => {
-  const texture = device.createTexture({
-    size: { width: image.width, height: image.height },
-    format: "rgba8unorm",
-    usage:
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.RENDER_ATTACHMENT,
-  });
-
-  const data = await createImageBitmap(image);
-
-  device.queue.copyExternalImageToTexture(
-    { source: data },
-    { texture: texture },
-    { width: image.width, height: image.height }
-  );
-
-  const sampler = device.createSampler({
-    magFilter: "linear",
-    minFilter: "linear",
-  });
-
-  return { texture, sampler };
-};
-
-/**
- * Load a texture from a URL
- * @param device
- * @param url
- * @returns
- */
-const createTextureFromURL = async (
-  device: GPUDevice,
-  url: string
-): Promise<any> => {
-  const promise = new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.src = url;
-    image.onload = () => resolve(image);
-    image.onerror = () => {
-      console.error(`Failed to load image ${url}`);
-      reject();
-    };
-  });
-
-  const image = await promise;
-  return await createTexture(device, image);
-};
