@@ -1,7 +1,7 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
 import texture from "./texture.png";
 
-const createBuffer = (device, data: Float32Array): GPUBuffer => {
+const createBuffer = (device: GPUDevice, data: Float32Array): GPUBuffer => {
   const buffer = device.createBuffer({
     size: data.byteLength,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -233,6 +233,7 @@ const main = async () => {
     passEncoder.setBindGroup(0, textureBindGroup);
     passEncoder.draw(6); // draw 3 vertices
     passEncoder.end();
+    device.queue.submit([commandEncoder.finish()]);
 
     window.requestAnimationFrame(() => draw());
   };
