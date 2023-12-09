@@ -102,12 +102,8 @@ class SpritePipeline {
     projectionViewMatrixBuffer: GPUBuffer
   ): SpritePipeline {
     const pipeline = new SpritePipeline();
-    const textureBindGroup = pipeline.initialize(
-      device,
-      texture,
-      projectionViewMatrixBuffer
-    );
-    return Object.assign(pipeline, { textureBindGroup: textureBindGroup });
+    pipeline.initialize(device, texture, projectionViewMatrixBuffer);
+    return pipeline;
   }
 
   public initialize(
@@ -200,7 +196,7 @@ class SpritePipeline {
       bindGroupLayouts: [projectionViewBindGroupLayout, textureBindGroupLayout],
     });
 
-    const textureBindGroup = device.createBindGroup({
+    this.textureBindGroup = device.createBindGroup({
       layout: textureBindGroupLayout,
       entries: [
         {
@@ -234,8 +230,6 @@ class SpritePipeline {
       },
       layout: pipelineLayout,
     });
-
-    return textureBindGroup;
   }
 }
 
@@ -315,7 +309,7 @@ const main = async () => {
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 2; i++) {
       drawSprite(
         device,
         playerTexture,
@@ -331,7 +325,7 @@ const main = async () => {
         camera
       );
     }
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 2; i++) {
       drawSprite(
         device,
         ufoRedTexture,
