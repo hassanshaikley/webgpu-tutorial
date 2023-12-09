@@ -1,7 +1,10 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
 import texture from "./texture.png";
 
-const createBuffer = (device: GPUDevice, data: Float32Array): GPUBuffer => {
+const createVertexBuffer = (
+  device: GPUDevice,
+  data: Float32Array
+): GPUBuffer => {
   const buffer = device.createBuffer({
     size: data.byteLength,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -9,6 +12,19 @@ const createBuffer = (device: GPUDevice, data: Float32Array): GPUBuffer => {
   });
 
   new Float32Array(buffer.getMappedRange()).set(data);
+  buffer.unmap();
+
+  return buffer;
+};
+
+const createIndexBuffer = (device: GPUDevice, data: Uint16Array): GPUBuffer => {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
+  });
+
+  new Uint16Array(buffer.getMappedRange()).set(data);
   buffer.unmap();
 
   return buffer;
@@ -39,7 +55,7 @@ const main = async () => {
 
   const testTexture = await createTextureFromURL(device, texture);
 
-  const positionBuffer = createBuffer(
+  const positionBuffer = createVertexBuffer(
     device,
     new Float32Array([
       -0.5,
@@ -48,15 +64,11 @@ const main = async () => {
       -0.5,
       -0.5,
       0.5,
-      -0.5,
       0.5,
       0.5,
-      0.5,
-      0.5,
-      -0.5,
     ])
   );
-  const colorsBuffer = createBuffer(
+  const colorsBuffer = createVertexBuffer(
     device,
     new Float32Array([
       1.0,
@@ -71,15 +83,9 @@ const main = async () => {
       1.0,
       1.0,
       1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b]
     ])
   );
-  const texCoordsBuffer = createBuffer(
+  const texCoordsBuffer = createVertexBuffer(
     device,
     new Float32Array([
       0.0,
@@ -88,13 +94,14 @@ const main = async () => {
       1.0,
       0.0,
       0.0,
-      0.0,
-      0.0,
       1.0,
       0.0,
-      1.0,
-      1.0,
     ])
+  );
+
+  const indexBuffer = createIndexBuffer(
+    device,
+    new Uint16Array([0, 1, 2, 1, 2, 3])
   );
 
   const shaderModule = device.createShaderModule({
@@ -225,12 +232,14 @@ const main = async () => {
 
     // DRAW HERE
     passEncoder.setPipeline(pipeline);
-    passEncoder.setVertexBuffer(2, positionBuffer);
+    passEncoder.setIndexBuffer(indexBuffer, "uint16");
+    passEncoder.setVertexBuffer(0, positionBuffer);
     passEncoder.setVertexBuffer(1, colorsBuffer);
-    passEncoder.setVertexBuffer(0, texCoordsBuffer);
+    passEncoder.setVertexBuffer(2, texCoordsBuffer);
     passEncoder.setBindGroup(0, textureBindGroup);
-    passEncoder.draw(6); // textures are usually squares, so 2 triangles = 6 vertices
+    passEncoder.drawIndexed(6); // draw 3 vertices
     passEncoder.end();
+
     device.queue.submit([commandEncoder.finish()]);
 
     window.requestAnimationFrame(() => draw());

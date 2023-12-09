@@ -4,11 +4,12 @@ struct VertexOut {
     @location(1) texCoords: vec2f,
 }
 
+// hi
 @vertex 
 fn vertexMain(
-    @location(2) pos: vec2f,  // xy
+    @location(0) pos: vec2f,  // xy
     @location(1) color: vec3f,  // rgb
-    @location(0) texCoords: vec2f, // uv
+    @location(2) texCoords: vec2f, // uv
 ) -> VertexOut 
 { 
    
