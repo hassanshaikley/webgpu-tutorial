@@ -1,4 +1,5 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
+import texture from "./texture.png";
 
 const createBuffer = (device, data: Float32Array): GPUBuffer => {
   const buffer = device.createBuffer({
@@ -37,6 +38,67 @@ const main = async () => {
   });
 
   // prepare triangle model
+
+  const testTexture = await createTextureFromURL(device, texture);
+
+  const positionBuffer = createBuffer(
+    device,
+    new Float32Array([
+      -0.5,
+      -0.5, // x, y
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+    ])
+  );
+  const colorsBuffer = createBuffer(
+    device,
+    new Float32Array([
+      1.0,
+      1.0,
+      1.0, // r g b
+      1.0,
+      1.0,
+      1.0, // r g b
+      1.0,
+      1.0,
+      1.0, // r g b
+      1.0,
+      1.0,
+      1.0, // r g b
+      1.0,
+      1.0,
+      1.0, // r g b
+      1.0,
+      1.0,
+      1.0, // r g b]
+    ])
+  );
+  const texCoordsBuffer = createBuffer(
+    device,
+    new Float32Array([
+      0.0,
+      1.0, // u, v
+      1.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      1.0,
+    ])
+  );
+
   const shaderModule = device.createShaderModule({
     code: shaderSource,
   });
@@ -65,10 +127,22 @@ const main = async () => {
     stepMode: "vertex",
   };
 
+  const textureCoordsLayout: GPUVertexBufferLayout = {
+    arrayStride: 2 * Float32Array.BYTES_PER_ELEMENT, // 2 floats * 4 bytes per float
+    attributes: [
+      {
+        shaderLocation: 2,
+        offset: 0,
+        format: "float32x2", // 2 floats
+      },
+    ],
+    stepMode: "vertex",
+  };
+
   const vertexState: GPUVertexState = {
     module: shaderModule,
     entryPoint: "vertexMain", // name of the entry point function for vertex shader, must be same as in shader
-    buffers: [positionBufferLayout, colorBufferLayout],
+    buffers: [positionBufferLayout, colorBufferLayout, textureCoordsLayout],
   };
 
   const fragmentState: GPUFragmentState = {
@@ -77,69 +151,21 @@ const main = async () => {
     targets: [
       {
         format: navigator.gpu.getPreferredCanvasFormat(),
+        blend: {
+          color: {
+            srcFactor: "one",
+            dstFactor: "one-minus-src-alpha",
+            operation: "add",
+          },
+          alpha: {
+            srcFactor: "one",
+            dstFactor: "one-minus-src-alpha",
+            operation: "add",
+          },
+        },
       },
     ],
   };
-
-  const positionBuffer = createBuffer(
-    device,
-    new Float32Array([
-      -0.5,
-      -0.5, // x, y
-      0.5,
-      -0.5,
-      -0.5,
-      0.5,
-      -0.5,
-      0.5,
-      0.5,
-      0.5,
-      0.5,
-      -0.5,
-    ])
-  );
-
-  const colorsBuffer = createBuffer(
-    device,
-    new Float32Array([
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-    ])
-  );
-
-  const texCoordsBuffer = createBuffer(
-    device,
-    new Float32Array([
-      0.0,
-      1.0, // u, v
-      1.0,
-      1.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      1.0,
-      0.0,
-      1.0,
-      1.0,
-    ])
-  );
 
   const textureBindGroupLayout = device.createBindGroupLayout({
     entries: [
@@ -155,10 +181,10 @@ const main = async () => {
       },
     ],
   });
-  const testTexture = await createTextureFromURL(
-    this.device,
-    "assets/uv_test.png"
-  );
+
+  const pipelineLayout = device.createPipelineLayout({
+    bindGroupLayouts: [textureBindGroupLayout],
+  });
 
   const textureBindGroup = device.createBindGroup({
     layout: textureBindGroupLayout,
@@ -180,7 +206,7 @@ const main = async () => {
     primitive: {
       topology: "triangle-list", // type of primitive to render
     },
-    layout: "auto",
+    layout: pipelineLayout,
   });
 
   const draw = () => {
@@ -216,36 +242,34 @@ const main = async () => {
 
 main();
 
-//
+const createTexture = async (
+  device: GPUDevice,
+  image: HTMLImageElement
+): Promise<any> => {
+  const texture = device.createTexture({
+    size: { width: image.width, height: image.height },
+    format: "rgba8unorm",
+    usage:
+      GPUTextureUsage.COPY_DST |
+      GPUTextureUsage.TEXTURE_BINDING |
+      GPUTextureUsage.RENDER_ATTACHMENT,
+  });
 
-// const createTexture = async (
-//   device: GPUDevice,
-//   image: HTMLImageElement
-// ): Promise<any> => {
-//   const texture = device.createTexture({
-//     size: { width: image.width, height: image.height },
-//     format: "rgba8unorm",
-//     usage:
-//       GPUTextureUsage.COPY_DST |
-//       GPUTextureUsage.TEXTURE_BINDING |
-//       GPUTextureUsage.RENDER_ATTACHMENT,
-//   });
+  const data = await createImageBitmap(image);
 
-//   const data = await createImageBitmap(image);
+  device.queue.copyExternalImageToTexture(
+    { source: data },
+    { texture: texture },
+    { width: image.width, height: image.height }
+  );
 
-//   device.queue.copyExternalImageToTexture(
-//     { source: data },
-//     { texture: texture },
-//     { width: image.width, height: image.height }
-//   );
+  const sampler = device.createSampler({
+    magFilter: "linear",
+    minFilter: "linear",
+  });
 
-//   const sampler = device.createSampler({
-//     magFilter: "linear",
-//     minFilter: "linear",
-//   });
-
-//   return { texture, sampler };
-// };
+  return { texture, sampler };
+};
 
 /**
  * Load a texture from a URL
@@ -268,5 +292,5 @@ const createTextureFromURL = async (
   });
 
   const image = await promise;
-  return Texture.createTexture(device, image);
+  return await createTexture(device, image);
 };
