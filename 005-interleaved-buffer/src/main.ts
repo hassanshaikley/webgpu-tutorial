@@ -1,35 +1,11 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
 import texture from "./texture.png";
-import { createTextureFromURL, initializeGpu } from "./utils";
-
-const createVertexBuffer = (
-  device: GPUDevice,
-  data: Float32Array
-): GPUBuffer => {
-  const buffer = device.createBuffer({
-    size: data.byteLength,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    mappedAtCreation: true,
-  });
-
-  new Float32Array(buffer.getMappedRange()).set(data);
-  buffer.unmap();
-
-  return buffer;
-};
-
-const createIndexBuffer = (device: GPUDevice, data: Uint16Array): GPUBuffer => {
-  const buffer = device.createBuffer({
-    size: data.byteLength,
-    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-    mappedAtCreation: true,
-  });
-
-  new Uint16Array(buffer.getMappedRange()).set(data);
-  buffer.unmap();
-
-  return buffer;
-};
+import {
+  createIndexBuffer,
+  createTextureFromURL,
+  createVertexBuffer,
+  initializeGpu,
+} from "./utils";
 
 const main = async () => {
   const { device, context } = await initializeGpu();

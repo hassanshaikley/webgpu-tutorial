@@ -24,7 +24,23 @@ export const initializeGpu = async () => {
   return { context, device };
 };
 
-export const createTexture = async (
+export const createBuffer = (
+  device: GPUDevice,
+  data: Float32Array
+): GPUBuffer => {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
+  });
+
+  new Float32Array(buffer.getMappedRange()).set(data);
+  buffer.unmap();
+
+  return buffer;
+};
+
+const createTexture = async (
   device: GPUDevice,
   image: HTMLImageElement
 ): Promise<any> => {
@@ -75,4 +91,36 @@ export const createTextureFromURL = async (
 
   const image = await promise;
   return await createTexture(device, image);
+};
+
+export const createVertexBuffer = (
+  device: GPUDevice,
+  data: Float32Array
+): GPUBuffer => {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
+  });
+
+  new Float32Array(buffer.getMappedRange()).set(data);
+  buffer.unmap();
+
+  return buffer;
+};
+
+export const createIndexBuffer = (
+  device: GPUDevice,
+  data: Uint16Array
+): GPUBuffer => {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
+  });
+
+  new Uint16Array(buffer.getMappedRange()).set(data);
+  buffer.unmap();
+
+  return buffer;
 };
