@@ -55,50 +55,14 @@ const main = async () => {
 
   const testTexture = await createTextureFromURL(device, texture);
 
-  const positionBuffer = createVertexBuffer(
+  const verticesBuffer = createVertexBuffer(
     device,
     new Float32Array([
-      -0.5,
-      -0.5, // x, y
-      0.5,
-      -0.5,
-      -0.5,
-      0.5,
-      0.5,
-      0.5,
+      // x y          u v          r g b
+      -0.5, -0.5, 0.0, 1.0, 1.0, 1.0, 1.0, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0, 1.0,
+      -0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.0, 1.0, 1.0, 1.0,
     ])
   );
-  const colorsBuffer = createVertexBuffer(
-    device,
-    new Float32Array([
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-      1.0,
-      1.0,
-      1.0, // r g b
-    ])
-  );
-  const texCoordsBuffer = createVertexBuffer(
-    device,
-    new Float32Array([
-      0.0,
-      1.0, // u, v
-      1.0,
-      1.0,
-      0.0,
-      0.0,
-      1.0,
-      0.0,
-    ])
-  );
-
   const indexBuffer = createIndexBuffer(
     device,
     new Uint16Array([0, 1, 2, 1, 2, 3])
@@ -109,36 +73,22 @@ const main = async () => {
   });
 
   const positionBufferLayout: GPUVertexBufferLayout = {
-    arrayStride: 2 * Float32Array.BYTES_PER_ELEMENT, // 2 floats * 4 bytes per float
+    arrayStride: 7 * Float32Array.BYTES_PER_ELEMENT, // 2 floats * 4 bytes per float
     attributes: [
       {
         shaderLocation: 0,
         offset: 0,
         format: "float32x2", // 2 floats
       },
-    ],
-    stepMode: "vertex",
-  };
-
-  const colorBufferLayout: GPUVertexBufferLayout = {
-    arrayStride: 3 * Float32Array.BYTES_PER_ELEMENT, // rgb * 4 bytes per float
-    attributes: [
       {
         shaderLocation: 1,
-        offset: 0,
-        format: "float32x3", // 3 floats
+        offset: 2 * Float32Array.BYTES_PER_ELEMENT,
+        format: "float32x2", // 2 floats
       },
-    ],
-    stepMode: "vertex",
-  };
-
-  const textureCoordsLayout: GPUVertexBufferLayout = {
-    arrayStride: 2 * Float32Array.BYTES_PER_ELEMENT, // 2 floats * 4 bytes per float
-    attributes: [
       {
         shaderLocation: 2,
-        offset: 0,
-        format: "float32x2", // 2 floats
+        offset: 4 * Float32Array.BYTES_PER_ELEMENT,
+        format: "float32x3", // 3 floats
       },
     ],
     stepMode: "vertex",
@@ -147,7 +97,7 @@ const main = async () => {
   const vertexState: GPUVertexState = {
     module: shaderModule,
     entryPoint: "vertexMain", // name of the entry point function for vertex shader, must be same as in shader
-    buffers: [positionBufferLayout, colorBufferLayout, textureCoordsLayout],
+    buffers: [positionBufferLayout],
   };
 
   const fragmentState: GPUFragmentState = {
@@ -233,9 +183,7 @@ const main = async () => {
     // DRAW HERE
     passEncoder.setPipeline(pipeline);
     passEncoder.setIndexBuffer(indexBuffer, "uint16");
-    passEncoder.setVertexBuffer(0, positionBuffer);
-    passEncoder.setVertexBuffer(1, colorsBuffer);
-    passEncoder.setVertexBuffer(2, texCoordsBuffer);
+    passEncoder.setVertexBuffer(0, verticesBuffer);
     passEncoder.setBindGroup(0, textureBindGroup);
     passEncoder.drawIndexed(6); // draw 3 vertices
     passEncoder.end();
