@@ -227,9 +227,9 @@ const main = async () => {
 
     // DRAW HERE
     passEncoder.setPipeline(pipeline);
-    passEncoder.setVertexBuffer(0, positionBuffer);
+    passEncoder.setVertexBuffer(2, positionBuffer);
     passEncoder.setVertexBuffer(1, colorsBuffer);
-    passEncoder.setVertexBuffer(2, texCoordsBuffer);
+    passEncoder.setVertexBuffer(0, texCoordsBuffer);
     passEncoder.setBindGroup(0, textureBindGroup);
     passEncoder.draw(6); // draw 3 vertices
     passEncoder.end();

@@ -6,9 +6,9 @@ struct VertexOut {
 
 @vertex 
 fn vertexMain(
-    @location(0) pos: vec2f,  // xy
+    @location(2) pos: vec2f,  // xy
     @location(1) color: vec3f,  // rgb
-    @location(2) texCoords: vec2f, // uv
+    @location(0) texCoords: vec2f, // uv
 ) -> VertexOut 
 { 
    
