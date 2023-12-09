@@ -37,8 +37,6 @@ const main = async () => {
     format: navigator.gpu.getPreferredCanvasFormat(),
   });
 
-  // prepare triangle model
-
   const testTexture = await createTextureFromURL(device, texture);
 
   const positionBuffer = createBuffer(
@@ -231,7 +229,7 @@ const main = async () => {
     passEncoder.setVertexBuffer(1, colorsBuffer);
     passEncoder.setVertexBuffer(0, texCoordsBuffer);
     passEncoder.setBindGroup(0, textureBindGroup);
-    passEncoder.draw(6); // draw 3 vertices
+    passEncoder.draw(6); // textures are usually squares, so 2 triangles = 6 vertices
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
 
