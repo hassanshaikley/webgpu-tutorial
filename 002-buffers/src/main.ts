@@ -1,4 +1,5 @@
 import shaderSource from "./shaders/shader.wgsl?raw";
+import { initializeGpu } from "./utils";
 
 const createBuffer = (device, data: Float32Array): GPUBuffer => {
   const buffer = device.createBuffer({
@@ -14,27 +15,7 @@ const createBuffer = (device, data: Float32Array): GPUBuffer => {
 };
 
 const main = async () => {
-  const canvas = document.getElementById("webgpu-canvas") as HTMLCanvasElement;
-  const context = canvas.getContext("webgpu") as GPUCanvasContext;
-
-  if (!context) {
-    console.error("WebGPU not supported");
-    alert("WebGPU not supported");
-    return;
-  }
-
-  const adapter = await navigator.gpu.requestAdapter();
-
-  if (!adapter) {
-    throw new Error("No adapter found");
-  }
-
-  const device = await adapter.requestDevice();
-
-  context.configure({
-    device: device,
-    format: navigator.gpu.getPreferredCanvasFormat(),
-  });
+  const { context, device } = await initializeGpu();
 
   // prepare triangle model
   const shaderModule = device.createShaderModule({

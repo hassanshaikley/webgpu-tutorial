@@ -23,8 +23,6 @@ const main = async () => {
     format: navigator.gpu.getPreferredCanvasFormat(),
   });
 
-  // prepare triangle model
-
   const shaderModule = device.createShaderModule({
     code: shaderSource,
   });
@@ -73,7 +71,6 @@ const main = async () => {
     // DRAW HERE
     passEncoder.setPipeline(pipeline);
     passEncoder.draw(3); // draw 3 vertices
-
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
