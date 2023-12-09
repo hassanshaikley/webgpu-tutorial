@@ -18,76 +18,6 @@ const FLOAT_PER_VERTEX = 7;
 const FLOATS_PER_SPRITE = 4 * FLOAT_PER_VERTEX;
 const INIDICES_PER_SPRITE = 6; // 2 triangles per sprite
 
-const vertexData: Float32Array = new Float32Array(7 * 4);
-
-const drawSprite = (
-  device: GPUDevice,
-  texture: any,
-  rect: Rect,
-  projectionViewMatrixBuffer: GPUBuffer,
-  indexBuffer: GPUBuffer,
-  passEncoder: GPURenderPassEncoder,
-  camera: Camera
-) => {
-  const spritePipeline = SpritePipeline.create(
-    device,
-    texture,
-    projectionViewMatrixBuffer
-  );
-
-  // top left
-  vertexData[0] = rect.x;
-  vertexData[1] = rect.y;
-  vertexData[2] = 0.0;
-  vertexData[3] = 0.0;
-  vertexData[4] = 1.0;
-  vertexData[5] = 1.0;
-  vertexData[6] = 1.0;
-
-  // top right
-  vertexData[7] = rect.x + rect.width;
-  vertexData[8] = rect.y;
-  vertexData[9] = 1.0;
-  vertexData[10] = 0.0;
-  vertexData[11] = 1.0;
-  vertexData[12] = 1.0;
-  vertexData[13] = 1.0;
-
-  // bottom right
-  vertexData[14] = rect.x + rect.width;
-  vertexData[15] = rect.y + rect.height;
-  vertexData[16] = 1.0;
-  vertexData[17] = 1.0;
-  vertexData[18] = 1.0;
-  vertexData[19] = 1.0;
-  vertexData[20] = 1.0;
-
-  // bottom left
-  vertexData[21] = rect.x;
-  vertexData[22] = rect.y + rect.height;
-  vertexData[23] = 0.0;
-  vertexData[24] = 1.0;
-  vertexData[25] = 1.0;
-  vertexData[26] = 1.0;
-  vertexData[27] = 1.0;
-
-  const vertexBuffer = createVertexBuffer(device, vertexData);
-
-  device.queue.writeBuffer(
-    projectionViewMatrixBuffer,
-    0,
-    camera.projectionViewMatrix as Float32Array
-  );
-
-  // DRAW HERE
-  passEncoder.setPipeline(spritePipeline.pipeline);
-  passEncoder.setIndexBuffer(indexBuffer, "uint16");
-  passEncoder.setVertexBuffer(0, vertexBuffer);
-  passEncoder.setBindGroup(0, spritePipeline.projectionViewBindGroup);
-  passEncoder.setBindGroup(1, spritePipeline.textureBindGroup);
-  passEncoder.drawIndexed(6); // draw 3 vertices
-};
-
 class BatchDrawCall {
   constructor(public pipeline: SpritePipeline) {}
   public vertexData = new Float32Array(
@@ -97,7 +27,7 @@ class BatchDrawCall {
 }
 
 class SpriteRenderer {
-  private currentTexture!: Texture;
+  private currentTexture!: any;
 
   private indexBuffer!: GPUBuffer;
   private projectionViewMatrixBuffer!: GPUBuffer;
@@ -171,15 +101,7 @@ class SpriteRenderer {
 
   // public drawSprite(texture: Texture, rect: Rect) {
 
-  public drawSprite(
-    device: GPUDevice,
-    texture: any,
-    rect: Rect,
-    projectionViewMatrixBuffer: GPUBuffer,
-    indexBuffer: GPUBuffer,
-    passEncoder: GPURenderPassEncoder,
-    camera: Camera
-  ) {
+  public drawSprite(texture: any, rect: Rect) {
     if (this.currentTexture != texture) {
       this.currentTexture = texture;
 
@@ -452,61 +374,10 @@ const main = async () => {
   );
   spriteRenderer.initialize();
 
-  const testTexture = await createTextureFromURL(device, texture);
-
   const playerTexture = await createTextureFromURL(device, shipTexture);
   const ufoRedTexture = await createTextureFromURL(device, ufoRedTexturex);
 
   const camera = new Camera(canvas.width, canvas.height);
-
-  const x = 100;
-  const y = 100;
-  const w = 99;
-  const h = 75;
-
-  const verticesBuffer = createVertexBuffer(
-    device,
-    new Float32Array([
-      // x y            u v           r g b
-      x,
-      y,
-      0.0,
-      0.0,
-      1.0,
-      1.0,
-      1.0, // top left
-      x + w,
-      y,
-      1.0,
-      0.0,
-      1.0,
-      1.0,
-      1.0, // top right
-      x + w,
-      y + h,
-      1.0,
-      1.0,
-      1.0,
-      1.0,
-      1.0, // bottom right
-      x,
-      y + h,
-      0.0,
-      1.0,
-      1.0,
-      1.0,
-      1.0, // bottom left
-    ])
-  );
-  const indexBuffer = createIndexBuffer(
-    device,
-    new Uint16Array([0, 1, 2, 2, 3, 0])
-  );
-
-  const projectionViewMatrixBuffer = createUniformBuffer(
-    device,
-    new Float32Array(16)
-  );
 
   const draw = () => {
     camera.update();
@@ -529,34 +400,24 @@ const main = async () => {
 
     for (let i = 0; i < 600; i++) {
       spriteRenderer.drawSprite(
-        device,
         playerTexture,
         new Rect(
           Math.random() * canvas.width,
           Math.random() * canvas.height,
           100,
           100
-        ),
-        projectionViewMatrixBuffer,
-        indexBuffer,
-        passEncoder,
-        camera
+        )
       );
     }
     for (let i = 0; i < 2; i++) {
       spriteRenderer.drawSprite(
-        device,
         ufoRedTexture,
         new Rect(
           Math.random() * canvas.width,
           Math.random() * canvas.height,
           100,
           100
-        ),
-        projectionViewMatrixBuffer,
-        indexBuffer,
-        passEncoder,
-        camera
+        )
       );
     }
 
