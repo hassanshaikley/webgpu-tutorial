@@ -14,11 +14,18 @@ import {
   initializeGpu,
   Rect,
 } from "./utils";
+import { vec2 } from "gl-matrix";
 
 const MAX_NUMBER_OF_SPRITES = 3;
 const FLOAT_PER_VERTEX = 7;
 const FLOATS_PER_SPRITE = 4 * FLOAT_PER_VERTEX;
 const INIDICES_PER_SPRITE = 6; // 2 triangles per sprite
+
+let v0 = vec2.create();
+let v1 = vec2.create();
+let v2 = vec2.create();
+let v3 = vec2.create();
+const rotationOrigin = vec2.create();
 
 export class Sprite {
   constructor(
@@ -156,7 +163,9 @@ export class SpriteRenderer {
     texture: Texture,
     rect: Rect,
     sourceRect: Rect,
-    color: Color = this.defaultColor
+    color: Color = this.defaultColor,
+    rotation: number = 0,
+    rotationAnchor: vec2 | null = null
   ) {
     if (this.currentTexture != texture) {
       this.currentTexture = texture;
@@ -186,43 +195,66 @@ export class SpriteRenderer {
 
     let i = batchDrawCall.instanceCount * FLOATS_PER_SPRITE;
 
-    let u0 = sourceRect.x / texture.texture.width;
-    let v0 = sourceRect.y / texture.texture.height;
-    let u1 = (sourceRect.x + sourceRect.width) / texture.texture.width;
-    let v1 = (sourceRect.y + sourceRect.height) / texture.texture.height;
+    let olduO = sourceRect.x / texture.texture.width;
+    let oldv0 = sourceRect.y / texture.texture.height;
+    let oldu1 = (sourceRect.x + sourceRect.width) / texture.texture.width;
+    let oldv1 = (sourceRect.y + sourceRect.height) / texture.texture.height;
+
+    v0[0] = rect.x;
+    v0[1] = rect.y;
+    v1[0] = rect.x + rect.width;
+    v1[1] = rect.y;
+    v2[0] = rect.x + rect.width;
+    v2[1] = rect.y + rect.height;
+    v3[0] = rect.x;
+    v3[1] = rect.y + rect.height;
+
+    if (rotation != 0) {
+      if (rotationAnchor == null) {
+        vec2.copy(rotationOrigin, v0);
+      } else {
+        rotationOrigin[0] = v0[0] + rotationAnchor[0] * rect.width;
+        rotationOrigin[1] = v0[1] + rotationAnchor[1] * rect.height;
+      }
+
+      vec2.rotate(v0, v0, rotationOrigin, rotation);
+      vec2.rotate(v1, v1, rotationOrigin, rotation);
+      vec2.rotate(v2, v2, rotationOrigin, rotation);
+      vec2.rotate(v3, v3, rotationOrigin, rotation);
+    }
 
     // top left
-    batchDrawCall.vertexData[0 + i] = rect.x;
-    batchDrawCall.vertexData[1 + i] = rect.y;
-    batchDrawCall.vertexData[2 + i] = u0;
-    batchDrawCall.vertexData[3 + i] = v0;
+    batchDrawCall.vertexData[0 + i] = v0[0];
+    batchDrawCall.vertexData[1 + i] = v0[1];
+    batchDrawCall.vertexData[2 + i] = olduO;
+    batchDrawCall.vertexData[3 + i] = oldv0;
     batchDrawCall.vertexData[4 + i] = color.r;
     batchDrawCall.vertexData[5 + i] = color.g;
     batchDrawCall.vertexData[6 + i] = color.b;
 
     // top right
-    batchDrawCall.vertexData[7 + i] = rect.x + rect.width;
-    batchDrawCall.vertexData[8 + i] = rect.y;
-    batchDrawCall.vertexData[9 + i] = u1;
-    batchDrawCall.vertexData[10 + i] = v0;
+    batchDrawCall.vertexData[7 + i] = v1[0];
+    batchDrawCall.vertexData[8 + i] = v1[1];
+    batchDrawCall.vertexData[9 + i] = oldu1;
+    batchDrawCall.vertexData[10 + i] = oldv0;
     batchDrawCall.vertexData[11 + i] = color.r;
     batchDrawCall.vertexData[12 + i] = color.g;
     batchDrawCall.vertexData[13 + i] = color.b;
 
     // bottom right
-    batchDrawCall.vertexData[14 + i] = rect.x + rect.width;
-    batchDrawCall.vertexData[15 + i] = rect.y + rect.height;
-    batchDrawCall.vertexData[16 + i] = u1;
-    batchDrawCall.vertexData[17 + i] = v1;
+    batchDrawCall.vertexData[14 + i] = v2[0];
+    batchDrawCall.vertexData[15 + i] = v2[1];
+    batchDrawCall.vertexData[16 + i] = oldu1;
+    batchDrawCall.vertexData[17 + i] = oldv1;
     batchDrawCall.vertexData[18 + i] = color.r;
     batchDrawCall.vertexData[19 + i] = color.g;
     batchDrawCall.vertexData[20 + i] = color.b;
 
     // bottom left
-    batchDrawCall.vertexData[21 + i] = rect.x;
-    batchDrawCall.vertexData[22 + i] = rect.y + rect.height;
-    batchDrawCall.vertexData[23 + i] = u0;
-    batchDrawCall.vertexData[24 + i] = v1;
+    batchDrawCall.vertexData[21 + i] = v3[0];
+    batchDrawCall.vertexData[22 + i] = v3[1];
+    batchDrawCall.vertexData[23 + i] = olduO;
+    batchDrawCall.vertexData[24 + i] = oldv1;
     batchDrawCall.vertexData[25 + i] = color.r;
     batchDrawCall.vertexData[26 + i] = color.g;
     batchDrawCall.vertexData[27 + i] = color.b;
@@ -437,7 +469,9 @@ const main = async () => {
   );
   spriteRenderer.initialize();
 
+  let rotation = 0;
   const draw = () => {
+    rotation += 0.01;
     const commandEncoder = device.createCommandEncoder();
 
     const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -457,31 +491,16 @@ const main = async () => {
 
     const playerSprite = Content.sprites["playerShip1_blue.png"];
 
-    playerSprite.drawRect.x += 0.1;
-    playerSprite.drawRect.y += 0.1;
-
-    playerSprite.drawRect.width = 10;
-    playerSprite.drawRect.height = 10;
-
     spriteRenderer.drawSpriteSource(
       playerSprite.texture,
       playerSprite.drawRect,
-      playerSprite.sourceRect
+      playerSprite.sourceRect,
+      undefined,
+      rotation,
+      vec2.fromValues(0.5, 0.5)
     );
 
-    const shield = Content.sprites["shield1.png"];
-    shield.drawRect.x = playerSprite.drawRect.x - 13;
-    shield.drawRect.y = playerSprite.drawRect.y - 12;
-
-    spriteRenderer.drawSpriteSource(
-      shield.texture,
-      shield.drawRect,
-      shield.sourceRect,
-      new Color(0, 0, 1)
-    );
-
-    const drawRect = new Rect(0, 0, 800, 600);
-
+    const drawRect = new Rect(0, 0, 200, 200);
     const halfWidth = Content.uvTexture.width / 2;
     const halfHeight = Content.uvTexture.height / 2;
     const sourceRect = new Rect(0, halfHeight, halfWidth, halfHeight);
